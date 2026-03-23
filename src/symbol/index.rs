@@ -138,8 +138,9 @@ impl ChainedIndex {
     
     /// Insert a symbol chain
     pub fn insert_chain(&self, chain: SymbolChain) -> Result<()> {
-        self.chains.insert(chain.symbol.as_u32(), chain)
-            .map_err(|_| SymbolError::InvalidId(chain.symbol.as_u32()))?;
+        let symbol_id = chain.symbol.as_u32();
+        self.chains.insert(symbol_id, chain)
+            .map_err(|_| SymbolError::InvalidId(symbol_id))?;
         Ok(())
     }
     
@@ -211,7 +212,7 @@ impl ChainedIndex {
         let mut location = DefinitionLocation::default();
         
         // Cycle detection
-        let visit_mark = self.visit_counter.fetch_add(1, Ordering::SeqCst);
+        let _visit_mark = self.visit_counter.fetch_add(1, Ordering::SeqCst);
         let max_depth = 100; // Prevent infinite loops
         
         while depth < max_depth {

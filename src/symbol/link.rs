@@ -58,20 +58,30 @@ impl LockFreeLink {
     /// Get target atomically
     #[inline]
     pub fn get_target(&self, guard: &Guard) -> Option<SymbolId> {
-        self.target.load(Ordering::Acquire, guard).map(|p| unsafe { *p.as_raw() })
+        let shared = self.target.load(Ordering::Acquire, guard);
+        if shared.is_null() {
+            None
+        } else {
+            Some(unsafe { *shared.as_raw() })
+        }
     }
     
     /// Get location atomically
     #[inline]
     pub fn get_location(&self, guard: &Guard) -> Option<DefinitionLocation> {
-        self.location.load(Ordering::Acquire, guard).map(|p| unsafe { *p.as_raw() })
+        let shared = self.location.load(Ordering::Acquire, guard);
+        if shared.is_null() {
+            None
+        } else {
+            Some(unsafe { *shared.as_raw() })
+        }
     }
     
     /// Update target atomically using CAS
     /// 
     /// Returns true if update succeeded, false if CAS failed
     pub fn update_target(&self, new_target: SymbolId, guard: &Guard) -> bool {
-        let new = Owned::new(new_target);
+        let mut new = Owned::new(new_target);
         
         loop {
             let current = self.target.load(Ordering::Acquire, guard);
@@ -90,6 +100,7 @@ impl LockFreeLink {
                         // Link was removed
                         return false;
                     }
+                    new = e.new;
                     continue;
                 }
             }

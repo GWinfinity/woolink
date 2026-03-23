@@ -60,6 +60,11 @@ impl PackageId {
     pub fn index(&self) -> usize {
         self.0 as usize
     }
+    
+    #[inline]
+    pub fn as_u32(&self) -> u32 {
+        self.0
+    }
 }
 
 impl Default for PackageId {
@@ -178,6 +183,8 @@ impl SoAStorage {
             return Err(SymbolError::InvalidId(idx as u32));
         }
         
+        let id = symbol.id;
+        
         unsafe {
             *self.symbol_ids.as_ptr().add(idx) = symbol.id;
             *self.symbol_package_ids.as_ptr().add(idx) = symbol.package_id;
@@ -194,7 +201,7 @@ impl SoAStorage {
             *self.symbol_chain_nexts.as_ptr().add(idx) = symbol.chain_next;
         }
         
-        Ok(SymbolId::new(symbol.id))
+        Ok(SymbolId::new(id))
     }
     
     /// Get symbol by ID - O(1) direct indexing
@@ -225,7 +232,7 @@ impl SoAStorage {
     }
     
     /// Batch get symbol names - cache-friendly sequential access
-    pub fn get_symbol_names(&self, start: usize, count: usize, string_pool: &[u8]) -> Vec<&str> {
+    pub fn get_symbol_names<'a>(&self, start: usize, count: usize, string_pool: &'a [u8]) -> Vec<&'a str> {
         let symbol_count = self.symbol_count();
         let end = (start + count).min(symbol_count);
         
@@ -275,11 +282,13 @@ impl SoAStorage {
             return Err(SymbolError::InvalidId(idx as u32));
         }
         
+        let id = package.id;
+        
         unsafe {
             *self.packages.as_ptr().add(idx) = package;
         }
         
-        Ok(PackageId::new(package.id))
+        Ok(PackageId::new(id))
     }
     
     /// Get package by ID

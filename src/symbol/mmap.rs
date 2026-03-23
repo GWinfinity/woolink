@@ -243,12 +243,12 @@ impl MmapIndex {
         let size = count * symbol_size;
         
         if offset + size <= self.mmap.len() {
+            #[cfg(target_os = "linux")]
             unsafe {
-                #[cfg(target_os = "linux")]
                 libc::posix_madvise(
                     self.mmap.as_ptr().add(offset) as *mut _,
                     size,
-                    libc::MADV_WILL_NEED
+                    libc::MADV_WILLNEED
                 );
             }
         }

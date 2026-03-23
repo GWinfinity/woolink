@@ -22,6 +22,8 @@
 //! ```
 
 pub mod symbol;
+pub mod bridge;
+pub mod cli;
 
 // Re-export main types
 pub use symbol::{

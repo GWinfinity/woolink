@@ -26,13 +26,13 @@ mod link;
 mod mmap;
 
 pub use storage::{SymbolStorage, SoAStorage, SymbolId, PackageId};
-pub use universe::{SymbolUniverse, UniverseSnapshot, SymbolUniverseGuard};
+pub use universe::{SymbolUniverse, UniverseSnapshot, SymbolUniverseGuard, UniverseBuilder};
 pub use index::{ChainedIndex, SymbolChain, DefinitionLocation};
 pub use link::{SymbolLinker, LinkResolver, LockFreeLink};
 pub use mmap::{MmapIndex, MemoryMappedStorage};
 
 /// Symbol kind in Go
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum SymbolKind {
     Function = 0,
@@ -63,7 +63,7 @@ impl SymbolKind {
 }
 
 /// Symbol visibility
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum Visibility {
     Public = 0,    // 首字母大写
@@ -72,7 +72,7 @@ pub enum Visibility {
 }
 
 /// Core symbol data with SoA-compatible layout
-#[derive(Debug, Clone, PartialEq, Eq, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Symbol {
     /// Unique symbol ID (32-bit for cache efficiency)
     pub id: u32,
@@ -145,7 +145,7 @@ impl Symbol {
 }
 
 /// Package information
-#[derive(Debug, Clone, PartialEq, Eq, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Package {
     /// Package ID
     pub id: u32,
@@ -173,7 +173,7 @@ pub struct Package {
 }
 
 /// Import relationship
-#[derive(Debug, Clone, Copy, PartialEq, Eq, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Import {
     /// Source package ID
     pub from_package: u32,
