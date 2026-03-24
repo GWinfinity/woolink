@@ -51,7 +51,7 @@ pub struct CommonOptions {
     /// Path to project
     #[arg(short, long, default_value = ".")]
     pub path: std::path::PathBuf,
-    
+
     /// Cache directory
     #[arg(long)]
     pub cache_dir: Option<std::path::PathBuf>,

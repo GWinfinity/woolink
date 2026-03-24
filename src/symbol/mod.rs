@@ -1,7 +1,7 @@
 //! 全局符号表与跨包解析系统
-//! 
+//!
 //! 本模块提供高性能的 Go 符号存储和解析能力，核心特性包括：
-//! 
+//!
 //! - **SoA 布局**: 符号属性分块存储，CPU 缓存友好，比传统 AoS 快 5-10 倍
 //! - **链式索引**: 预计算的符号链接，支持 O(1) 定义跳转
 //! - **并发安全**: RwLock + DashMap 支持 1000+ 线程并发读取
@@ -85,17 +85,17 @@
 
 use std::sync::Arc;
 
-mod storage;
-mod universe;
 mod index;
 mod link;
 mod mmap;
+mod storage;
+mod universe;
 
-pub use storage::{SymbolStorage, SoAStorage, SymbolId, PackageId};
-pub use universe::{SymbolUniverse, UniverseSnapshot, SymbolUniverseGuard, UniverseBuilder};
-pub use index::{ChainedIndex, SymbolChain, DefinitionLocation};
-pub use link::{SymbolLinker, LinkResolver, LockFreeLink};
-pub use mmap::{MmapIndex, MemoryMappedStorage};
+pub use index::{ChainedIndex, DefinitionLocation, SymbolChain};
+pub use link::{LinkResolver, LockFreeLink, SymbolLinker};
+pub use mmap::{MemoryMappedStorage, MmapIndex};
+pub use storage::{PackageId, SoAStorage, SymbolId, SymbolStorage};
+pub use universe::{SymbolUniverse, SymbolUniverseGuard, UniverseBuilder, UniverseSnapshot};
 
 /// Go 语言符号类型
 ///
@@ -155,7 +155,10 @@ impl SymbolKind {
 
     /// 检查符号类型是否是类型定义
     pub fn is_type(&self) -> bool {
-        matches!(self, SymbolKind::Type | SymbolKind::Interface | SymbolKind::Struct)
+        matches!(
+            self,
+            SymbolKind::Type | SymbolKind::Interface | SymbolKind::Struct
+        )
     }
 }
 
@@ -180,7 +183,12 @@ impl Visibility {
     pub fn from_name(name: &str) -> Self {
         if name.starts_with("internal/") {
             Visibility::Internal
-        } else if name.chars().next().map(|c| c.is_uppercase()).unwrap_or(false) {
+        } else if name
+            .chars()
+            .next()
+            .map(|c| c.is_uppercase())
+            .unwrap_or(false)
+        {
             Visibility::Public
         } else {
             Visibility::Private
@@ -197,40 +205,40 @@ impl Visibility {
 pub struct Symbol {
     /// 唯一符号 ID (32-bit 为缓存效率优化)
     pub id: u32,
-    
+
     /// 所属包 ID
     pub package_id: u32,
-    
+
     /// 符号类型
     pub kind: SymbolKind,
-    
+
     /// 可见性
     pub visibility: Visibility,
-    
+
     /// 名称在字符串池的偏移
     pub name_offset: u32,
-    
+
     /// 名称长度
     pub name_len: u16,
-    
+
     /// 文档注释在字符串池的偏移 (0 表示无文档)
     pub doc_offset: u32,
-    
+
     /// 文档长度
     pub doc_len: u16,
-    
+
     /// 签名/类型在字符串池的偏移
     pub signature_offset: u32,
-    
+
     /// 签名长度
     pub signature_len: u16,
-    
+
     /// 定义位置：文件 ID
     pub def_file_id: u32,
-    
+
     /// 定义位置：文件内偏移
     pub def_offset: u32,
-    
+
     /// 链式索引下一条 (0 表示终端)
     pub chain_next: u32,
 }
@@ -255,7 +263,13 @@ impl Symbol {
     /// assert_eq!(sym.id, 1);
     /// assert_eq!(sym.kind, SymbolKind::Function);
     /// ```
-    pub fn new(id: u32, package_id: u32, kind: SymbolKind, name_offset: u32, name_len: u16) -> Self {
+    pub fn new(
+        id: u32,
+        package_id: u32,
+        kind: SymbolKind,
+        name_offset: u32,
+        name_len: u16,
+    ) -> Self {
         Self {
             id,
             package_id,
@@ -285,17 +299,17 @@ impl Symbol {
         self.chain_next = next;
         self
     }
-    
+
     /// 检查符号是否导出 (公开可见)
     pub fn is_exported(&self) -> bool {
         matches!(self.visibility, Visibility::Public)
     }
-    
+
     /// 检查符号是否有文档注释
     pub fn has_doc(&self) -> bool {
         self.doc_offset != 0
     }
-    
+
     /// 检查符号是否有签名/类型信息
     pub fn has_signature(&self) -> bool {
         self.signature_offset != 0
@@ -314,25 +328,25 @@ impl Symbol {
 pub struct Package {
     /// 包 ID
     pub id: u32,
-    
+
     /// 导入路径在字符串池的偏移
     pub path_offset: u32,
     pub path_len: u16,
-    
+
     /// 包名称偏移
     pub name_offset: u32,
     pub name_len: u16,
-    
+
     /// 模块版本偏移
     pub version_offset: u32,
     pub version_len: u16,
-    
+
     /// 包内第一个符号 ID
     pub first_symbol: u32,
-    
+
     /// 包内符号数量
     pub symbol_count: u16,
-    
+
     /// 包导入数量
     pub import_count: u16,
 }
@@ -356,10 +370,10 @@ impl Package {
 pub struct Import {
     /// 源包 ID
     pub from_package: u32,
-    
+
     /// 目标包 ID
     pub to_package: u32,
-    
+
     /// 导入别名偏移 (0 表示无别名)
     pub alias_offset: u32,
     pub alias_len: u16,
@@ -403,19 +417,19 @@ impl UniverseStats {
 pub enum SymbolError {
     #[error("Symbol not found: {0}")]
     NotFound(String),
-    
+
     #[error("Package not found: {0}")]
     PackageNotFound(String),
-    
+
     #[error("Invalid symbol ID: {0}")]
     InvalidId(u32),
-    
+
     #[error("Chain broken at symbol {0}")]
     BrokenChain(u32),
-    
+
     #[error("Mmap error: {0}")]
     MmapError(#[from] std::io::Error),
-    
+
     #[error("Serialization error: {0}")]
     SerializationError(String),
 
@@ -473,7 +487,7 @@ mod tests {
             symbol_count: 10,
             import_count: 0,
         };
-        
+
         assert!(pkg.contains_symbol(100));
         assert!(pkg.contains_symbol(109));
         assert!(!pkg.contains_symbol(99));
@@ -489,7 +503,7 @@ mod tests {
             string_pool_size: 10000,
             memory_usage_bytes: 50000,
         };
-        
+
         assert_eq!(stats.avg_bytes_per_symbol(), 50.0);
     }
 }

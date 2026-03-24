@@ -14,7 +14,7 @@ use commands::{IndexCommand, QueryCommand, StatsCommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
-    
+
     /// Enable verbose output
     #[arg(short, long, global = true)]
     pub verbose: bool,
@@ -25,11 +25,11 @@ pub enum Commands {
     /// Build symbol index from Go modules
     #[command(name = "index")]
     Index(IndexCommand),
-    
+
     /// Query symbols
     #[command(name = "query")]
     Query(QueryCommand),
-    
+
     /// Show statistics
     #[command(name = "stats")]
     Stats(StatsCommand),
@@ -37,7 +37,7 @@ pub enum Commands {
 
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    
+
     // Initialize logging
     if cli.verbose {
         tracing_subscriber::fmt()
@@ -48,7 +48,7 @@ pub async fn run() -> anyhow::Result<()> {
             .with_max_level(tracing::Level::INFO)
             .init();
     }
-    
+
     match cli.command {
         Commands::Index(cmd) => commands::index(cmd).await,
         Commands::Query(cmd) => commands::query(cmd).await,

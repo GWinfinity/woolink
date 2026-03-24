@@ -1,5 +1,6 @@
 //! woolink 🔗 - Global Symbol Table for Woo Ecosystem
-//! 
+#![allow(dead_code, unused_imports, unused_variables)]
+//!
 //! [![Crates.io](https://img.shields.io/crates/v/woolink)](https://crates.io/crates/woolink)
 //! [![Docs.rs](https://docs.rs/woolink/badge.svg)](https://docs.rs/woolink)
 //! [![License](https://img.shields.io/badge/license-MIT-blue)](../LICENSE)
@@ -186,39 +187,18 @@
 //! - [性能报告](../README.md)
 //! - [GitHub](https://github.com/yourusername/woolink)
 
-pub mod symbol;
 pub mod bridge;
 pub mod cli;
+pub mod symbol;
 
 // Re-export main types
 pub use symbol::{
-    SymbolUniverse,
-    SymbolUniverseGuard,
-    UniverseSnapshot,
-    SymbolStorage,
-    SoAStorage,
-    ChainedIndex,
-    SymbolChain,
-    DefinitionLocation,
-    SymbolLinker,
-    LinkResolver,
-    LockFreeLink,
-    MmapIndex,
-    MemoryMappedStorage,
-    Symbol,
-    Package,
-    Import,
-    SymbolKind,
-    Visibility,
-    SymbolId,
-    PackageId,
-    UniverseStats,
-    SymbolError,
-    Result,
-    UniverseBuilder,
+    ChainedIndex, DefinitionLocation, Import, LinkResolver, LockFreeLink, MemoryMappedStorage,
+    MmapIndex, Package, PackageId, Result, SoAStorage, Symbol, SymbolChain, SymbolError, SymbolId,
+    SymbolKind, SymbolLinker, SymbolStorage, SymbolUniverse, SymbolUniverseGuard, UniverseBuilder,
+    UniverseSnapshot, UniverseStats, Visibility,
 };
 
-/// Common imports for woolink users
 pub mod prelude {
     //! 常用类型的便捷导入
     //!
@@ -233,14 +213,9 @@ pub mod prelude {
     //! let guard = universe.read();
     //! let sym = guard.get_symbol(SymbolId::new(1));
     //! ```
-    
+
     pub use crate::symbol::{
-        SymbolUniverse,
-        SymbolId,
-        PackageId,
-        SymbolKind,
-        Visibility,
-        DefinitionLocation,
+        DefinitionLocation, PackageId, SymbolId, SymbolKind, SymbolUniverse, Visibility,
     };
 }
 
@@ -258,13 +233,13 @@ pub const INDEX_FORMAT_VERSION: u32 = 1;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use symbol::{Symbol, SymbolKind, Visibility, UniverseBuilder, DefinitionLocation};
+    use symbol::{DefinitionLocation, Symbol, SymbolKind, UniverseBuilder, Visibility};
 
     #[test]
     fn test_end_to_end() {
         // Build universe
         let mut builder = UniverseBuilder::with_capacity(10, 2);
-        
+
         // Add package
         builder.add_package(symbol::Package {
             id: 1,
@@ -278,21 +253,21 @@ mod tests {
             symbol_count: 2,
             import_count: 0,
         });
-        
+
         // Add symbols
         builder.add_symbol(
             Symbol::new(1, 1, SymbolKind::Function, 0, 4),
-            DefinitionLocation::new(1, 100)
+            DefinitionLocation::new(1, 100),
         );
-        
+
         builder.add_symbol(
             Symbol::new(2, 1, SymbolKind::Type, 4, 3),
-            DefinitionLocation::new(1, 200)
+            DefinitionLocation::new(1, 200),
         );
-        
+
         // Build universe
         let universe = builder.build();
-        
+
         // Query
         let guard = universe.read();
         let sym = guard.get_symbol(SymbolId::new(1));
