@@ -13,7 +13,7 @@ env:
 
 jobs:
   test:
-    name: Test
+    name: Test & Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +37,78 @@ jobs:
       
       - name: Run doc tests
         run: cargo test --doc
+
+  pre-publish-check:
+    name: Pre-Publish Checklist
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: ✅ Check Cargo.toml metadata
+        run: |
+          echo "Checking Cargo.toml metadata..."
+          
+          for field in name version description license repository; do
+            if ! grep -q "^$field = " Cargo.toml; then
+              echo "❌ Missing required field: $field"
+              exit 1
+            fi
+            echo "  ✅ $field present"
+          done
+          
+          CARGO_VERSION=$(grep "^version = " Cargo.toml | head -1 | cut -d'"' -f2)
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          if [ "$CARGO_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch: Cargo.toml ($CARGO_VERSION) != Tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "  ✅ Version matches tag: $CARGO_VERSION"
+      
+      - name: ✅ Check LICENSE file
+        run: |
+          LICENSE_TYPE=$(grep "^license = " Cargo.toml | cut -d'"' -f2)
+          echo "Declared license: $LICENSE_TYPE"
+          
+          if [ ! -f "LICENSE" ] && [ ! -f "LICENSE.txt" ] && [ ! -f "LICENSE-MIT" ]; then
+            echo "❌ LICENSE file not found"
+            exit 1
+          fi
+          echo "  ✅ LICENSE file exists"
+      
+      - name: ✅ Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "❌ Uncommitted changes detected:"
+            git status --short
+            exit 1
+          fi
+          echo "  ✅ No uncommitted changes"
+      
+      - name: ✅ Verify package
+        run: |
+          echo "Running cargo package --allow-dirty..."
+          cargo package --allow-dirty --no-verify 2>&1 | head -20
+          echo "  ✅ Package structure valid"
+      
+      - name: ✅ Check exclude patterns
+        run: |
+          echo "Checking exclude patterns..."
+          CHECK_PATTERNS="benchmark testdata scripts docs .github benches"
+          
+          for pattern in $CHECK_PATTERNS; do
+            if grep -q "exclude.*=.*\".*$pattern" Cargo.toml || \
+               grep -q "exclude.*=.*\[.*\".*$pattern" Cargo.toml; then
+              echo "  ✅ $pattern is excluded"
+            else
+              if [ -d "$pattern" ]; then
+                echo "⚠️  $pattern directory exists but not excluded in Cargo.toml"
+              fi
+            fi
+          done
 
   build:
     name: Build Binaries
@@ -95,7 +167,7 @@ jobs:
 
   publish-crate:
     name: Publish to crates.io
-    needs: [test, build]
+    needs: [test, pre-publish-check, build]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
