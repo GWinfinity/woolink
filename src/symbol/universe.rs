@@ -1,7 +1,7 @@
 //! SymbolUniverse - Global Symbol Table with Concurrent Access
 //! 
 //! 全局符号宇宙：
-//! - RwLock<SymbolUniverse> 支持 1000+ AI Agent 线程同时读取
+//! - `RwLock<SymbolUniverse>` 支持 1000+ AI Agent 线程同时读取
 //! - SoA 布局存储符号数据
 //! - 链式索引实现 O(1) 定义跳转
 //! - 支持事务性修改和快照

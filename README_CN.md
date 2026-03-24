@@ -1,116 +1,114 @@
 # woolink 🔗
 
-**⚡ Blazing-fast Go Cross-package Symbol Resolver — 10-100x faster than Go type system**
+**⚡ 极速跨包符号解析 —— 比 Go 类型系统快 10-100 倍**
 
 [![Crates.io](https://img.shields.io/crates/v/woolink)](https://crates.io/crates/woolink)
 [![Docs.rs](https://docs.rs/woolink/badge.svg)](https://docs.rs/woolink)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-woolink is a global symbol table and cross-package reference resolution engine written in Rust, featuring SoA layout and chained indexing for O(1) symbol jumps and 1000+ concurrent thread reads.
+woolink 是用 Rust 编写的全局符号表与跨包引用解析引擎，采用 SoA 布局和链式索引，实现 O(1) 符号跳转和 1000+ 线程并发读取。
 
-> 🐕 **Part of Woo Ecosystem**: [woofind](https://github.com/yourusername/woofind) → [woolink](https://github.com/yourusername/woolink) → [wootype](https://github.com/yourusername/wootype)
-
-📖 [中文文档](README_CN.md)
+> 🐕 **Woo Ecosystem 核心组件**: [woofind](https://github.com/yourusername/woofind) → [woolink](https://github.com/yourusername/woolink) → [wootype](https://github.com/yourusername/wootype)
 
 ---
 
-## 🚀 Extreme Performance
+## 🚀 极致性能
 
-### Speed Comparison
+### 速度对比
 
-| Scenario | woolink | Go types2 | gopls | Speedup |
-|----------|---------|-----------|-------|---------|
-| **Symbol Lookup** | 8ns | ~150ns | ~500μs | **18-60,000x** |
-| **Definition Jump** | O(1) | Requires parsing | ~100ms | **∞** |
-| **Cross-package Resolution** | ~50ns | ~5ms | ~200ms | **100,000-4,000,000x** |
-| **Concurrent Read (1000 threads)** | Linear scaling | Single-threaded | N/A | **∞** |
-| **Memory Traversal** | SoA contiguous | Pointer hopping | Pointer hopping | **5-10x** |
+| 场景 | woolink | Go types2 | gopls | 领先倍数 |
+|------|---------|-----------|-------|----------|
+| **符号查找** | 8ns | ~150ns | ~500μs | **18-60,000x** |
+| **定义跳转** | O(1) | 需解析 | ~100ms | **∞** |
+| **跨包解析** | ~50ns | ~5ms | ~200ms | **100,000-4,000,000x** |
+| **并发读取 (1000 线程)** | 线性扩展 | 单线程 | N/A | **∞** |
+| **内存遍历** | SoA 连续 | 指针跳跃 | 指针跳跃 | **5-10x** |
 
-*Test environment: Standard x86_64, Release mode*
+*测试环境：标准 x86_64，Release 模式*
 
-### Why So Fast?
+### 为什么这么快？
 
 ```
-🦀 Native Rust Performance
-   ├─ Zero-cost abstractions
-   ├─ No GC pauses
-   └─ Extreme memory control
+🦀 Rust 原生性能
+   ├─ 零成本抽象
+   ├─ 无 GC 停顿
+   └─ 极致内存控制
 
 📊 SoA (Structure of Arrays)
-   ├─ Symbol attributes in separate arrays
-   ├─ CPU cache-friendly
-   └─ 5-10x faster than pointer hopping
+   ├─ 符号属性分块存储
+   ├─ CPU 缓存友好
+   └─ 比指针跳转快 5-10x
 
-⚡ Chained Symbol Index
-   ├─ O(1) definition jump
-   ├─ Pre-computed symbol chains
-   └─ Replaces on-demand parsing
+⚡ 链式符号索引
+   ├─ O(1) 定义跳转
+   ├─ 预计算符号链
+   └─ 替代按需解析
 
-🔒 RwLock Concurrency
-   ├─ 1000+ AI Agent concurrent reads
-   ├─ Copy-on-write snapshots
-   └─ Non-blocking reads
+🔒 RwLock 并发
+   ├─ 1000+ AI Agent 并发读
+   ├─ 写时复制快照
+   └─ 读操作无阻塞
 ```
 
 ---
 
-## 📊 Performance Details
+## 📊 性能详情
 
-### SoA vs AoS Cache Efficiency
+### SoA vs AoS 缓存效率
 
-| Operation | AoS (Go) | SoA (woolink) | Speedup |
-|-----------|---------|---------------|---------|
-| Sequential name traversal | ~150ns/item | ~15ns/item | **10x** |
-| Random symbol access | ~200ns | ~8ns | **25x** |
-| Cache miss rate | ~30% | ~5% | **6x** |
+| 操作 | AoS (Go) | SoA (woolink) | 提升 |
+|------|---------|---------------|------|
+| 顺序遍历名称 | ~150ns/项 | ~15ns/项 | **10x** |
+| 随机访问符号 | ~200ns | ~8ns | **25x** |
+| 缓存未命中率 | ~30% | ~5% | **6x** |
 
-### Concurrency Scaling
+### 并发扩展性
 
 ```
-Threads │ Total Time │ Per-thread │ Efficiency
-────────┼────────────┼────────────┼───────────
-   1    │ 8μs        │ 8μs        │ 100%
-  10    │ 9μs        │ 0.9μs      │  89%
- 100    │ 12μs       │ 0.12μs     │  67%
-1000    │ 20μs       │ 0.02μs     │  40%
+线程数 │ 总耗时   │ 单线程耗时 │ 效率
+───────┼─────────┼───────────┼────────
+   1   │ 8μs     │ 8μs       │ 100%
+  10   │ 9μs     │ 0.9μs     │  89%
+ 100   │ 12μs    │ 0.12μs    │  67%
+1000   │ 20μs    │ 0.02μs    │  40%
 ```
 
-### Comparison with Go Toolchain
+### 与 Go 工具链对比
 
-| Feature | woolink | Go types2 | gopls |
-|---------|---------|-----------|-------|
-| Symbol Storage | SoA contiguous | Pointer scattered | Pointer scattered |
-| Definition Jump | O(1) pre-computed | On-demand parsing | On-demand parsing |
-| Concurrent Reads | 1000+ threads | Single-threaded | Limited |
-| Memory Usage | 5-10MB | 50-200MB | 100-500MB |
-| Cross-package Resolution | ~50ns | ~5ms | ~200ms |
+| 特性 | woolink | Go types2 | gopls |
+|------|---------|-----------|-------|
+| 符号存储 | SoA 连续 | 指针分散 | 指针分散 |
+| 定义跳转 | O(1) 预计算 | 按需解析 | 按需解析 |
+| 并发读取 | 1000+ 线程 | 单线程 | 有限 |
+| 内存占用 | 5-10MB | 50-200MB | 100-500MB |
+| 跨包解析 | ~50ns | ~5ms | ~200ms |
 
 ---
 
-## ✨ Features
+## ✨ 功能特性
 
-| Feature | Description |
-|---------|-------------|
-| 🔗 **Global Symbol Table** | Unified cross-package symbol management |
-| ⚡ **O(1) Definition Jump** | Chained index, no re-parsing needed |
-| 📊 **SoA Layout** | CPU cache-friendly symbol storage |
-| 🔄 **Concurrent Safety** | RwLock supports 1000+ threads |
-| 💾 **mmap Index** | Zero-copy loading, 3ms startup |
-| 🔍 **Cross-package Resolution** | Handles import alias, dot import |
-| 🔄 **Symbol Linking** | Lock-free symbol alias resolution |
-| 🧩 **Ecosystem Integration** | Seamless integration with woofind, wootype |
+| 特性 | 描述 |
+|------|------|
+| 🔗 **全局符号表** | 跨包符号统一管理 |
+| ⚡ **O(1) 定义跳转** | 链式索引，无需重新解析 |
+| 📊 **SoA 布局** | CPU 缓存友好的符号存储 |
+| 🔄 **并发安全** | RwLock 支持 1000+ 线程 |
+| 💾 **mmap 索引** | 零拷贝加载，3ms 启动 |
+| 🔍 **跨包解析** | 处理 import alias、dot import |
+| 🔄 **符号链接** | Lock-free 符号别名解析 |
+| 🧩 **生态集成** | 与 woofind、wootype 无缝集成 |
 
 ---
 
-## 📦 Installation
+## 📦 安装
 
-### From crates.io
+### 从 crates.io
 
 ```bash
 cargo install woolink
 ```
 
-### From Source
+### 从源码
 
 ```bash
 git clone https://github.com/yourusername/woolink.git
@@ -118,7 +116,7 @@ cd woolink
 cargo install --path . --release
 ```
 
-### Pre-built Binaries
+### 预编译二进制
 
 ```bash
 # Linux x86_64
@@ -129,39 +127,42 @@ sudo mv woolink /usr/local/bin/
 
 ---
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
-### As a Library
+### 作为库使用
 
 ```rust
 use woolink::{SymbolUniverse, Symbol, SymbolId, UniverseBuilder};
 use woolink::prelude::*;
 
-// Create global symbol table
+// 创建全局符号表
 let universe = SymbolUniverse::new(100_000);
 
-// Insert symbols
+// 插入符号
 {
     let mut guard = universe.write();
+    // 添加包
+    guard.add_package(Package { ... });
+    // 添加符号
     guard.insert_symbol(symbol)?;
 }
 
-// Concurrent query (supports 1000+ threads)
+// 并发查询 (支持 1000+ 线程)
 let guard = universe.read();
 let sym = guard.get_symbol(SymbolId::new(42));
 
-// O(1) definition jump
+// O(1) 定义跳转
 let (target, location) = guard.jump_to_definition(SymbolId::new(42))?;
 ```
 
-### Cross-package Resolution
+### 跨包解析
 
 ```rust
 use woolink::bridge::{CrossPackageResolver, ResolutionResult};
 
 let resolver = CrossPackageResolver::new(universe);
 
-// Resolve cross-package reference
+// 解析跨包引用
 let result = resolver.resolve("github.com/gin-gonic/gin.Context", "main.go")?;
 match result {
     ResolutionResult::Symbol(sym, loc) => {
@@ -173,37 +174,37 @@ match result {
 }
 ```
 
-### CLI Usage
+### CLI 用法
 
 ```bash
-# Build index
+# 构建索引
 woolink index ./my-project
 
-# Query symbols
+# 查询符号
 woolink query "NewClient"
 
-# Show statistics
+# 显示统计
 woolink stats
 
-# Cross-package resolution test
+# 跨包解析测试
 woolink resolve "pkg.Symbol" --from "main.go"
 
-# Export symbol table
+# 导出符号表
 woolink export --format json --output symbols.json
 ```
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ 架构亮点
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    woolink Architecture                      │
+│                    woolink 高性能架构                        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │ SoA Storage │    │ ChainedIndex│    │ SymbolLinker│     │
-│  │ (Symbols)   │    │ (Chained)   │    │(Lock-free)  │     │
+│  │  SoA Storage│    │ ChainedIndex│    │ SymbolLinker│     │
+│  │  (符号存储)  │    │ (链式索引)   │    │(Lock-free) │     │
 │  │             │    │             │    │             │     │
 │  │ • name_array│    │ • chains    │    │ • epoch CAS │     │
 │  │ • kind_array│    │ • name_index│    │ • no locks  │     │
@@ -215,57 +216,79 @@ woolink export --format json --output symbols.json
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │              SymbolUniverse (RwLock)                │   │
 │  │                                                      │   │
-│  │  • 1000+ concurrent reads (read lock)               │   │
-│  │  • Exclusive writes (write lock)                    │   │
-│  │  • Copy-on-write snapshots                          │   │
+│  │  • 1000+ 并发读 (read lock)                          │   │
+│  │  • 独占写 (write lock)                               │   │
+│  │  • 写时复制快照                                      │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                            │                                 │
 │         ┌──────────────────┼──────────────────┐             │
 │         ▼                  ▼                  ▼             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
 │  │CrossPackage │    │   MmapIndex │    │  Resolver   │     │
-│  │  Resolver   │    │  (Zero-copy)│    │   Cache     │     │
+│  │  Resolver   │    │  (零拷贝)    │    │   Cache     │     │
 │  └─────────────┘    └─────────────┘    └─────────────┘     │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Core Technologies
+### 核心技术
 
-| Technology | Purpose | Effect |
-|------------|---------|--------|
-| **SoA** | Symbol Storage | CPU cache-friendly, 5-10x traversal speed |
-| **ChainedIndex** | Symbol Resolution | O(1) definition jump |
-| **crossbeam-epoch** | Symbol Linking | Lock-free updates |
-| **parking_lot** | Concurrency Control | High-performance RwLock |
-| **DashMap** | Auxiliary Index | Lock-free concurrent reads |
-| **memmap2** | Index Loading | Zero-copy, 3ms startup |
-
----
-
-## 📚 Documentation
-
-- [API Docs](https://docs.rs/woolink)
-- [Architecture](ARCHITECTURE.md)
-- [Chinese Docs](README_CN.md)
+| 技术 | 用途 | 效果 |
+|------|------|------|
+| **SoA** | 符号存储 | CPU 缓存友好，5-10x 遍历速度 |
+| **ChainedIndex** | 符号解析 | O(1) 定义跳转 |
+| **crossbeam-epoch** | 符号链接 | Lock-free 更新 |
+| **parking_lot** | 并发控制 | 高性能 RwLock |
+| **DashMap** | 辅助索引 | 无锁并发读 |
+| **memmap2** | 索引加载 | 零拷贝，3ms 启动 |
 
 ---
 
-## 💡 Use Cases
+## 📚 API 文档
 
-### IDE Definition Jump
+### 核心类型
+
+| 类型 | 描述 |
+|------|------|
+| `SymbolUniverse` | 全局符号表容器，支持并发读写 |
+| `Symbol` | 符号数据，SoA 兼容布局 |
+| `Package` | 包信息 |
+| `ChainedIndex` | 链式符号索引 |
+| `CrossPackageResolver` | 跨包引用解析器 |
+| `SymbolId` / `PackageId` | 类型安全的标识符 |
+
+### 模块结构
 
 ```
-User clicks symbol → woolink jump → Returns definition location
-Latency: O(1) = ~8ns
-Experience: ✅ Instant jump, imperceptible delay
-Comparison: gopls needs ~100ms to re-parse
+woolink/
+├── symbol/          # 核心符号表
+│   ├── SoAStorage      # 结构数组存储
+│   ├── ChainedIndex    # 链式索引
+│   ├── SymbolLinker    # 符号链接
+│   └── MmapIndex       # 内存映射索引
+├── bridge/          # 生态集成
+│   ├── CrossPackageResolver
+│   └── SymbolImporter
+└── cli/             # 命令行工具
 ```
 
-### AI Agent Concurrent Analysis
+---
+
+## 💡 使用场景
+
+### IDE 定义跳转
+
+```
+用户点击符号 → woolink jump → 返回定义位置
+延迟: O(1) = ~8ns
+体验: ✅ 即时跳转，无感知延迟
+对比: gopls 需要 ~100ms 重新解析
+```
+
+### AI Agent 并发分析
 
 ```rust
-// 1000+ AI Agents querying symbols concurrently
+// 1000+ AI Agent 并发查询符号
 let universe = Arc::new(SymbolUniverse::new(100_000));
 
 let handles: Vec<_> = (0..1000)
@@ -280,31 +303,31 @@ let handles: Vec<_> = (0..1000)
     .collect();
 ```
 
-### Cross-package Dead Code Detection
+### 跨包死码检测
 
 ```bash
-# Analyze symbol references across entire project
+# 分析整个项目的符号引用
 woolink analyze --project . --output report.json
 
-# Find unused exported symbols
+# 找出未使用的导出符号
 woolink deadcode --package "github.com/my/pkg"
 ```
 
-### Circular Dependency Detection
+### 循环依赖检测
 
 ```bash
-# Detect circular dependencies between packages
+# 检测包之间的循环依赖
 woolink cycles --project .
 
-# Show dependency graph
+# 显示依赖图
 woolink graph --format dot | dot -Tpng > deps.png
 ```
 
 ---
 
-## 🔌 Ecosystem
+## 🔌 生态系统
 
-woolink is a core component of the Woo Ecosystem:
+woolink 是 Woo Ecosystem 的核心组件，与其他项目无缝集成：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -313,7 +336,7 @@ woolink is a core component of the Woo Ecosystem:
 │                                                              │
 │   ┌──────────┐        ┌──────────┐        ┌──────────┐     │
 │   │ woofind  │───────▶│ woolink  │◀───────│ wootype  │     │
-│   │ (Search) │ Index  │  (Link)  │  Types  │ (Types)  │     │
+│   │ (搜索)    │ 索引   │ (链接)   │  类型   │ (类型)   │     │
 │   └──────────┘        └────┬─────┘        └──────────┘     │
 │                             │                                │
 │                             ▼                                │
@@ -325,17 +348,17 @@ woolink is a core component of the Woo Ecosystem:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-- **[woofind](https://crates.io/crates/woofind)**: Symbol search engine, provides symbol index
-- **[wootype](https://crates.io/crates/wootype)**: Type checking engine, provides type information
+- **[woofind](https://crates.io/crates/woofind)**: 符号搜索引擎，提供符号索引
+- **[wootype](https://crates.io/crates/wootype)**: 类型检查引擎，提供类型信息
 
 ---
 
-## 🤝 Contributing
+## 🤝 贡献
 
-Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
+欢迎贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ```bash
-# Development environment
+# 开发环境
 git clone https://github.com/yourusername/woolink.git
 cd woolink
 cargo test
@@ -344,7 +367,7 @@ cargo bench
 
 ---
 
-## 📄 License
+## 📄 许可证
 
 MIT License © [Your Name]
 
@@ -352,4 +375,4 @@ MIT License © [Your Name]
 
 **Made with ❤️ and 🦀 Rust**
 
-> *"woolink makes Go cross-package symbol resolution so fast you forget it exists."*
+> *"woolink 让 Go 跨包符号解析快到忘记它存在。"*

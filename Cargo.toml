@@ -3,7 +3,11 @@ name = "woolink"
 version = "0.1.0"
 edition = "2021"
 authors = ["Woolink Team"]
-description = "Global Symbol Table for Woo Ecosystem - Cross-package symbol resolution with SoA layout"
+description = "Blazing-fast Go cross-package symbol resolver —— Vibe Coding toolchain"
+license = "MIT"
+repository = "https://github.com/yourusername/woolink"
+homepage = "https://github.com/yourusername/woolink"
+documentation = "https://docs.rs/woolink"
 
 [dependencies]
 # Core async runtime
@@ -59,8 +63,8 @@ indexmap = "2.1"
 arc-swap = "1.6"
 
 # For integration with woofind and wootype
-woofind = { path = "../woofind" }
-wootype = { path = "../wootype" }
+woofind = { path = "../woofind", version = "0.1.0" }
+wootype = { path = "../wootype", version = "0.1.0" }
 
 [dev-dependencies]
 tokio-test = "0.4"
