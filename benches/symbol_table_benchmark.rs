@@ -11,9 +11,7 @@ use std::thread;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use woolink::{
-    DefinitionLocation, PackageId, Symbol, SymbolId, SymbolKind, SymbolUniverse, Visibility,
-};
+use woolink::{Symbol, SymbolId, SymbolKind, SymbolUniverse, Visibility};
 
 /// Create test symbols
 fn create_test_symbols(count: usize) -> Vec<Symbol> {
@@ -169,7 +167,7 @@ fn bench_definition_jump(c: &mut Criterion) {
         b.iter(|| {
             let guard = universe.read();
             let result = guard.jump_to_definition(SymbolId::new(1));
-            black_box(result);
+            let _ = black_box(result);
         });
     });
 

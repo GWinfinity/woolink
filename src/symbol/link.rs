@@ -447,7 +447,7 @@ mod tests {
                 .link(
                     SymbolId::new(i),
                     SymbolId::new(i + 1),
-                    DefinitionLocation::new(1, i as u32 * 10),
+                    DefinitionLocation::new(1, i * 10),
                 )
                 .unwrap();
         }

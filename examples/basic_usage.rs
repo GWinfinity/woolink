@@ -9,9 +9,7 @@
 use std::sync::Arc;
 use std::thread;
 
-use woolink::{
-    DefinitionLocation, PackageId, Symbol, SymbolId, SymbolKind, SymbolUniverse, Visibility,
-};
+use woolink::{Symbol, SymbolId, SymbolKind, SymbolUniverse, Visibility};
 
 fn main() {
     println!("🚀 woolink 全局符号表示例\n");
@@ -39,7 +37,7 @@ fn main() {
         guard.insert_package(pkg).unwrap();
 
         // 插入符号
-        let symbols = vec![
+        let symbols = [
             ("NewClient", SymbolKind::Function, 100),
             ("Client", SymbolKind::Type, 200),
             ("Options", SymbolKind::Type, 300),

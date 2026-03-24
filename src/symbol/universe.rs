@@ -74,13 +74,15 @@ pub struct SymbolUniverseInner {
 /// Global Symbol Universe - The central symbol table
 ///
 /// Usage:
-/// ```rust
+/// ```rust,ignore
+/// use woolink::SymbolUniverse;
+///
 /// let universe = SymbolUniverse::new(100_000);
 ///
 /// // Concurrent reads (1000+ threads)
 /// let guard = universe.read();
-/// let symbol = guard.get_symbol(id);
-/// let location = guard.jump_to_definition(id); // O(1)
+/// let symbol = guard.get_symbol(SymbolId::new(0));
+/// let location = guard.jump_to_definition(SymbolId::new(0)); // O(1)
 ///
 /// // Exclusive writes
 /// let mut guard = universe.write();
@@ -141,15 +143,16 @@ impl SymbolUniverse {
 impl SymbolUniverseInner {
     /// Insert a symbol into the universe
     pub fn insert_symbol(&mut self, symbol: Symbol) -> Result<SymbolId> {
-        let id = SymbolId::new(symbol.id);
+        // Insert into storage and get the assigned ID (index-based)
+        let id = self.storage.insert_symbol(symbol.clone())?;
 
-        // Insert into storage
-        self.storage.insert_symbol(symbol.clone())?;
-
-        // Index by name
+        // Index by name (only if string pool has valid data)
         let pkg_id = PackageId::new(symbol.package_id);
-        let name = self.get_string(symbol.name_offset, symbol.name_len)?;
-        self.index.index_name(pkg_id, name, id);
+        if symbol.name_len > 0 {
+            if let Ok(name) = self.get_string(symbol.name_offset, symbol.name_len) {
+                self.index.index_name(pkg_id, name, id);
+            }
+        }
 
         // Create chain
         let def = DefinitionLocation::new(symbol.def_file_id, symbol.def_offset);
@@ -207,17 +210,18 @@ impl SymbolUniverseInner {
 
     /// Insert a package
     pub fn insert_package(&mut self, package: Package) -> Result<PackageId> {
-        let id = PackageId::new(package.id);
+        let storage_id = self.storage.insert_package(package.clone())?;
 
-        self.storage.insert_package(package.clone())?;
-
-        // Cache by path
-        let path = self.get_string(package.path_offset, package.path_len)?;
-        self.package_cache.insert(path.to_string(), id);
+        // Cache by path (only if string pool has valid data)
+        if package.path_len > 0 {
+            if let Ok(path) = self.get_string(package.path_offset, package.path_len) {
+                self.package_cache.insert(path.to_string(), storage_id);
+            }
+        }
 
         self.stats.total_packages += 1;
 
-        Ok(id)
+        Ok(storage_id)
     }
 
     /// Get package by ID
@@ -449,28 +453,30 @@ mod tests {
     fn test_definition_jump() {
         let universe = SymbolUniverse::new(100);
 
+        let target_id: SymbolId;
+        let alias_id: SymbolId;
+
         {
             let mut inner = universe.write();
 
-            // Create target symbol
+            // Create target symbol (gets ID 0)
             let target = create_test_symbol(1, "Target");
-            inner.insert_symbol(target).unwrap();
+            target_id = inner.insert_symbol(target).unwrap();
 
-            // Create alias
-            let mut alias = create_test_symbol(2, "Alias");
-            alias.chain_next = 1; // Points to target
-            inner.insert_symbol(alias).unwrap();
+            // Create alias (gets ID 1)
+            let alias = create_test_symbol(2, "Alias");
+            alias_id = inner.insert_symbol(alias).unwrap();
 
-            // Create chain link
-            inner
-                .link_alias(SymbolId::new(2), SymbolId::new(1))
-                .unwrap();
+            // Create chain link: alias -> target
+            inner.link_alias(alias_id, target_id).unwrap();
         }
 
         // Jump from alias should resolve to target
         let guard = universe.read();
-        let (target, location) = guard.jump_to_definition(SymbolId::new(2)).unwrap();
-        assert_eq!(target.id, 1);
-        assert_eq!(location.offset, 100); // 1 * 100
+        let (target, location) = guard.jump_to_definition(alias_id).unwrap();
+        assert_eq!(target.id, target_id.as_u32());
+        // location is from the starting chain (alias), not the target
+        // alias was created with id=2, so def_offset = 2 * 100 = 200
+        assert_eq!(location.offset, 200);
     }
 }

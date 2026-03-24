@@ -188,10 +188,11 @@ impl SoAStorage {
             return Err(SymbolError::InvalidId(idx as u32));
         }
 
-        let id = symbol.id;
+        // Use index as the symbol ID to ensure O(1) lookup
+        let id = idx as u32;
 
         unsafe {
-            *self.symbol_ids.as_ptr().add(idx) = symbol.id;
+            *self.symbol_ids.as_ptr().add(idx) = id;
             *self.symbol_package_ids.as_ptr().add(idx) = symbol.package_id;
             *self.symbol_kinds.as_ptr().add(idx) = symbol.kind as u8;
             *self.symbol_visibilities.as_ptr().add(idx) = symbol.visibility as u8;
@@ -298,10 +299,14 @@ impl SoAStorage {
             return Err(SymbolError::InvalidId(idx as u32));
         }
 
-        let id = package.id;
+        // Use index as the package ID to ensure O(1) lookup
+        let id = idx as u32;
 
         unsafe {
-            *self.packages.as_ptr().add(idx) = package;
+            // Store the package with the correct ID
+            let mut pkg = package;
+            pkg.id = id;
+            *self.packages.as_ptr().add(idx) = pkg;
         }
 
         Ok(PackageId::new(id))
@@ -433,10 +438,12 @@ mod tests {
         };
 
         let id = storage.insert_symbol(sym.clone()).unwrap();
-        assert_eq!(id, SymbolId::new(1));
+        // First symbol gets ID 0 (index-based)
+        assert_eq!(id, SymbolId::new(0));
 
         let retrieved = storage.get_symbol(id).unwrap();
-        assert_eq!(retrieved.id, sym.id);
+        // The stored symbol's id field is now the index-based ID
+        assert_eq!(retrieved.id, 0);
         assert_eq!(retrieved.kind, sym.kind);
     }
 

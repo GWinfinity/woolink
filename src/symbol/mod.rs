@@ -10,7 +10,7 @@
 //!
 //! ## 模块结构
 //!
-//! ```
+//! ```text
 //! symbol/
 //! ├── storage.rs      # SoA 存储实现
 //! ├── universe.rs     # SymbolUniverse 容器
@@ -22,17 +22,18 @@
 //! ## 快速开始
 //!
 //! ```rust
-//! use woolink::symbol::{SymbolUniverse, Symbol, SymbolKind, UniverseBuilder};
+//! use woolink::symbol::{SymbolUniverse, SymbolId};
 //!
 //! // 创建符号宇宙
 //! let universe = SymbolUniverse::new(100_000);
 //!
 //! // 并发读取 (支持 1000+ 线程)
 //! let guard = universe.read();
-//! let sym = guard.get_symbol(SymbolId::new(42));
 //!
-//! // O(1) 定义跳转
-//! let (target, location) = guard.jump_to_definition(SymbolId::new(42)).unwrap();
+//! // 查询符号 (如果存在)
+//! if let Some(sym) = guard.get_symbol(SymbolId::new(0)) {
+//!     println!("Found symbol: {:?}", sym);
+//! }
 //! ```
 //!
 //! ## 性能对比

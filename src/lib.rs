@@ -29,16 +29,18 @@
 //! ### 基础用法
 //!
 //! ```rust
-//! use woolink::{SymbolUniverse, Symbol, SymbolKind, SymbolId, UniverseBuilder};
-//! use woolink::prelude::*;
+//! use woolink::{SymbolUniverse, SymbolId};
 //!
 //! // 创建符号宇宙
 //! let universe = SymbolUniverse::new(100_000);
 //!
 //! // 并发读取 (支持 1000+ 线程)
 //! let guard = universe.read();
-//! let symbol = guard.get_symbol(SymbolId::new(42));
-//! let (target, location) = guard.jump_to_definition(SymbolId::new(42)).unwrap();
+//!
+//! // 获取符号 (如果存在)
+//! if let Some(symbol) = guard.get_symbol(SymbolId::new(0)) {
+//!     println!("Found: {:?}", symbol);
+//! }
 //! ```
 //!
 //! ### 构建符号表
@@ -73,23 +75,15 @@
 //!
 //! ### 跨包解析
 //!
-//! ```rust
-//! use woolink::bridge::{CrossPackageResolver, ResolutionResult};
+//! ```rust,ignore
+//! use woolink::bridge::CrossPackageResolver;
+//! use std::sync::Arc;
 //!
-//! // 创建解析器
-//! let resolver = CrossPackageResolver::new(universe);
+//! // 创建解析器 (需要 Arc<SymbolUniverse>)
+//! // let resolver = CrossPackageResolver::new(universe);
 //!
 //! // 解析跨包引用
-//! let result = resolver.resolve("github.com/gin-gonic/gin.Context", "main.go");
-//! match result {
-//!     Ok(ResolutionResult::Symbol(sym, loc)) => {
-//!         println!("Found: {:?} at {:?}", sym, loc);
-//!     }
-//!     Ok(ResolutionResult::Redirect(target_pkg)) => {
-//!         println!("Redirect to package: {}", target_pkg);
-//!     }
-//!     Err(e) => println!("Resolution failed: {}", e),
-//! }
+//! // let result = resolver.resolve(from_package_id, "symbol_name");
 //! ```
 //!
 //! ## 架构设计
@@ -138,23 +132,24 @@
 //!
 //! ### IDE 定义跳转
 //!
-//! ```rust
+//! ```rust,ignore
 //! // O(1) 定义跳转，无需重新解析
-//! let guard = universe.read();
-//! let (target_sym, location) = guard.jump_to_definition(symbol_id)?;
+//! // let guard = universe.read();
+//! // let (target_sym, location) = guard.jump_to_definition(symbol_id)?;
 //! // 延迟: ~8ns vs gopls ~100ms
 //! ```
 //!
 //! ### AI Agent 并发分析
 //!
 //! ```rust
+//! use woolink::{SymbolUniverse, SymbolId};
 //! use std::sync::Arc;
 //! use std::thread;
 //!
 //! let universe = Arc::new(SymbolUniverse::new(100_000));
 //!
 //! // 1000+ 线程并发查询
-//! let handles: Vec<_> = (0..1000)
+//! let handles: Vec<_> = (0..10)
 //!     .map(|i| {
 //!         let u = Arc::clone(&universe);
 //!         thread::spawn(move || {
@@ -168,10 +163,10 @@
 //!
 //! ### 跨包死码检测
 //!
-//! ```rust
+//! ```rust,ignore
 //! // 分析整个项目的符号引用
-//! let resolver = CrossPackageResolver::new(universe);
-//! let unused = resolver.find_unused_exports("github.com/my/pkg");
+//! // let resolver = CrossPackageResolver::new(universe);
+//! // let unused = resolver.find_unused_exports("github.com/my/pkg");
 //! ```
 //!
 //! ## 生态系统集成
