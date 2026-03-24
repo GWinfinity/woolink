@@ -20,7 +20,22 @@ jobs:
     name: Test & Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout woolink
+        uses: actions/checkout@v4
+        with:
+          path: woolink
+      
+      - name: Checkout woofind
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/woofind
+          path: woofind
+      
+      - name: Checkout wootype
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/wootype
+          path: wootype
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -31,15 +46,19 @@ jobs:
         uses: Swatinem/rust-cache@v2
       
       - name: Check formatting
+        working-directory: woolink
         run: cargo fmt -- --check
       
       - name: Run clippy
+        working-directory: woolink
         run: cargo clippy --all-targets --all-features -- -D warnings
       
       - name: Run tests
+        working-directory: woolink
         run: cargo test --all-features
       
       - name: Run doc tests
+        working-directory: woolink
         run: cargo test --doc
 
   pre-publish-check:
@@ -47,12 +66,28 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout woolink
+        uses: actions/checkout@v4
+        with:
+          path: woolink
+      
+      - name: Checkout woofind
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/woofind
+          path: woofind
+      
+      - name: Checkout wootype
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/wootype
+          path: wootype
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       
       - name: ✅ Check Cargo.toml metadata
+        working-directory: woolink
         run: |
           echo "Checking Cargo.toml metadata..."
           
@@ -73,6 +108,7 @@ jobs:
           echo "  ✅ Version matches tag: $CARGO_VERSION"
       
       - name: ✅ Check LICENSE file
+        working-directory: woolink
         run: |
           LICENSE_TYPE=$(grep "^license = " Cargo.toml | cut -d'"' -f2)
           echo "Declared license: $LICENSE_TYPE"
@@ -84,6 +120,7 @@ jobs:
           echo "  ✅ LICENSE file exists"
       
       - name: ✅ Check for uncommitted changes
+        working-directory: woolink
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "❌ Uncommitted changes detected:"
@@ -93,12 +130,14 @@ jobs:
           echo "  ✅ No uncommitted changes"
       
       - name: ✅ Verify package
+        working-directory: woolink
         run: |
           echo "Running cargo package --allow-dirty..."
           cargo package --allow-dirty --no-verify 2>&1 | head -20
           echo "  ✅ Package structure valid"
       
       - name: ✅ Check exclude patterns
+        working-directory: woolink
         run: |
           echo "Checking exclude patterns..."
           CHECK_PATTERNS="benchmark testdata scripts docs .github benches"
@@ -132,7 +171,22 @@ jobs:
     
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout woolink
+        uses: actions/checkout@v4
+        with:
+          path: woolink
+      
+      - name: Checkout woofind
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/woofind
+          path: woofind
+      
+      - name: Checkout wootype
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/wootype
+          path: wootype
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -145,10 +199,12 @@ jobs:
           key: ${{ matrix.target }}
       
       - name: Build release binary
+        working-directory: woolink
         run: cargo build --release --target ${{ matrix.target }}
       
       - name: Package binary (Unix)
         if: matrix.os != 'windows-latest'
+        working-directory: woolink
         run: |
           cd target/${{ matrix.target }}/release
           tar czvf ../../../woolink-${{ matrix.target }}.tar.gz woolink
@@ -156,6 +212,7 @@ jobs:
       
       - name: Package binary (Windows)
         if: matrix.os == 'windows-latest'
+        working-directory: woolink
         run: |
           cd target/${{ matrix.target }}/release
           7z a ../../../woolink-${{ matrix.target }}.zip woolink.exe
@@ -175,7 +232,22 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout woolink
+        uses: actions/checkout@v4
+        with:
+          path: woolink
+      
+      - name: Checkout woofind
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/woofind
+          path: woofind
+      
+      - name: Checkout wootype
+        uses: actions/checkout@v4
+        with:
+          repository: GWinfinity/wootype
+          path: wootype
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -184,9 +256,11 @@ jobs:
         uses: Swatinem/rust-cache@v2
       
       - name: Verify package
+        working-directory: woolink
         run: cargo package --allow-dirty
       
       - name: Publish to crates.io
+        working-directory: woolink
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         # Skip if token is not available (don't fail the workflow)
@@ -205,9 +279,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout woolink
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: woolink
       
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -217,6 +293,7 @@ jobs:
       
       - name: Generate changelog
         id: changelog
+        working-directory: woolink
         run: |
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo HEAD~10)..HEAD >> $GITHUB_OUTPUT
@@ -247,11 +324,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout woolink
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: woolink
       
       - name: Check version bump
+        working-directory: woolink
         run: |
           CURRENT_VERSION=$(grep "^version" Cargo.toml | head -1 | cut -d'"' -f2)
           git fetch origin main
