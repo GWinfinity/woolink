@@ -1,12 +1,12 @@
 [package]
 name = "woolink"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
-authors = ["Woolink Team"]
+authors = ["Woo Team"]
 description = "Blazing-fast Go cross-package symbol resolver —— Vibe Coding toolchain"
 license = "MIT"
-repository = "https://github.com/yourusername/woolink"
-homepage = "https://github.com/yourusername/woolink"
+repository = "https://github.com/GWinfinity/woolink"
+homepage = "https://github.com/GWinfinity/woolink"
 documentation = "https://docs.rs/woolink"
 
 [dependencies]
