@@ -1,9 +1,9 @@
-//! Bridge module - Integration with woofind and wootype
+//! Bridge module - Cross-package symbol resolution
 //!
 //! 桥接层：
-//! - 从 woofind 导入符号索引
-//! - 与 wootype 类型系统集成
 //! - 提供统一的跨包引用解析
+//!
+//! Note: woofind and wootype integration is disabled for standalone builds
 
 pub mod importer;
 pub mod resolver;

@@ -1,12 +1,9 @@
 //! Index command - Build symbol index from Go modules
 
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::Instant;
 
 use clap::Args;
-
-use crate::bridge::{SymbolImporter, ImportConfig};
 
 /// Build symbol index
 #[derive(Args, Clone)]
@@ -43,39 +40,10 @@ pub async fn run(cmd: Command) -> anyhow::Result<()> {
             .ok();
     }
     
-    // Import from woofind
-    let config = ImportConfig {
-        include_private: cmd.include_private,
-        include_docs: true,
-        include_locations: true,
-        batch_size: 10000,
-        progress_interval: 1000,
-    };
-    
-    let mut importer = SymbolImporter::new(config);
-    
-    // Try to load from woofind if available
-    match woofind::index::IndexBuilder::new() {
-        Ok(builder) => {
-            println!("   Loading from woofind...");
-            
-            // Build index
-            builder.build_from_directory(&cmd.path)?;
-            
-            // Import to woolink
-            let universe = importer.import_from_woofind(&*builder.index())?;
-            
-            let stats = universe.read().stats();
-            println!("\n✅ Index built:");
-            println!("   Symbols: {}", stats.total_symbols);
-            println!("   Packages: {}", stats.total_packages);
-            println!("   Memory: {} MB", stats.memory_usage_bytes / 1024 / 1024);
-        }
-        Err(e) => {
-            println!("   Note: woofind not available ({})", e);
-            println!("   Creating empty index...");
-        }
-    }
+    // Note: woofind integration disabled for standalone builds
+    // Future: implement standalone symbol indexing from Go source
+    println!("   Creating empty index...");
+    println!("   (Full indexing requires woofind - enable with --features woofind)");
     
     println!("\n⏱️  Completed in {:?}", start.elapsed());
     

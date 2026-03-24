@@ -1,12 +1,11 @@
-//! Symbol Importer - Import symbols from woofind and wootype
+//! Symbol Importer - Import symbols from external sources
 //!
 //! 符号导入器：
-//! - 从 woofind 的 InvertedIndex 导入符号
-//! - 从 wootype 的 TypeUniverse 导入类型信息
 //! - 批量导入优化
+//!
+//! Note: woofind and wootype integration is disabled for standalone builds
 
 use std::sync::Arc;
-use std::time::Instant;
 
 use rayon::prelude::*;
 
@@ -63,167 +62,25 @@ impl SymbolImporter {
         }
     }
 
-    /// Import from woofind's InvertedIndex
-    pub fn import_from_woofind(
-        &mut self,
-        index: &woofind::index::InvertedIndex,
-    ) -> Result<Arc<SymbolUniverse>> {
-        let start = Instant::now();
-
-        tracing::info!("Starting import from woofind...");
-
-        // Collect all symbols
-        let mut symbols = Vec::new();
-        let mut packages: std::collections::HashMap<String, PackageId> =
-            std::collections::HashMap::new();
-        let mut next_package_id = 1u32;
-
-        // Process symbols by package
-        for entry in index.name_index.iter() {
-            for woofind_sym in entry.value() {
-                // Get or create package
-                let pkg_id = *packages
-                    .entry(woofind_sym.package.clone())
-                    .or_insert_with(|| {
-                        let id = PackageId::new(next_package_id);
-                        next_package_id += 1;
-                        id
-                    });
-
-                // Convert symbol kind
-                let kind = match woofind_sym.kind {
-                    woofind::index::SymbolKind::Function => SymbolKind::Function,
-                    woofind::index::SymbolKind::Type => SymbolKind::Type,
-                    woofind::index::SymbolKind::Interface => SymbolKind::Interface,
-                    woofind::index::SymbolKind::Struct => SymbolKind::Struct,
-                    woofind::index::SymbolKind::Const => SymbolKind::Const,
-                    woofind::index::SymbolKind::Var => SymbolKind::Var,
-                    woofind::index::SymbolKind::Method => SymbolKind::Method,
-                };
-
-                // Determine visibility
-                let visibility = if woofind_sym
-                    .name
-                    .chars()
-                    .next()
-                    .map(|c: char| c.is_uppercase())
-                    .unwrap_or(false)
-                {
-                    Visibility::Public
-                } else {
-                    Visibility::Private
-                };
-
-                // Skip private if not included
-                if !self.config.include_private && matches!(visibility, Visibility::Private) {
-                    continue;
-                }
-
-                // Add strings to pool
-                let name_offset = self.add_string(&woofind_sym.name);
-                let name_len = woofind_sym.name.len() as u16;
-
-                let (doc_offset, doc_len) = if self.config.include_docs {
-                    woofind_sym
-                        .doc
-                        .as_ref()
-                        .map(|d| (self.add_string(d), d.len() as u16))
-                        .unwrap_or((0, 0))
-                } else {
-                    (0, 0)
-                };
-
-                let (sig_offset, sig_len) = woofind_sym
-                    .signature
-                    .as_ref()
-                    .map(|s| (self.add_string(s), s.len() as u16))
-                    .unwrap_or((0, 0));
-
-                let symbol = Symbol {
-                    id: symbols.len() as u32 + 1,
-                    package_id: pkg_id.as_u32(),
-                    kind,
-                    visibility,
-                    name_offset,
-                    name_len,
-                    doc_offset,
-                    doc_len,
-                    signature_offset: sig_offset,
-                    signature_len: sig_len,
-                    def_file_id: 0, // Would need file table
-                    def_offset: 0,
-                    chain_next: 0,
-                };
-
-                symbols.push(symbol);
-            }
-        }
-
-        tracing::info!(
-            "Collected {} symbols in {:?}",
-            symbols.len(),
-            start.elapsed()
-        );
-
-        // Create universe using builder
-        let mut builder = UniverseBuilder::with_capacity(symbols.len(), packages.len());
-
-        // Add packages
-        for (path, pkg_id) in packages {
-            let name = path.rfind('/').map(|i| &path[i + 1..]).unwrap_or(&path);
-
-            let path_offset = self.add_string(&path);
-            let name_offset = self.add_string(name);
-
-            let symbol_count = symbols
-                .iter()
-                .filter(|s| s.package_id == pkg_id.as_u32())
-                .count() as u16;
-
-            builder.add_package(Package {
-                id: pkg_id.as_u32(),
-                path_offset,
-                path_len: path.len() as u16,
-                name_offset,
-                name_len: name.len() as u16,
-                version_offset: 0,
-                version_len: 0,
-                first_symbol: 1,
-                symbol_count,
-                import_count: 0,
-            });
-        }
-
-        // Add symbols with definitions
-        for sym in symbols {
-            let def = DefinitionLocation::new(sym.def_file_id, sym.def_offset);
-            builder.add_symbol(sym, def);
-        }
-
-        let universe = builder.build();
-
-        tracing::info!("Import complete in {:?}", start.elapsed());
-
-        Ok(Arc::new(universe))
-    }
-
-    /// Import from wootype's TypeUniverse
-    pub fn import_from_wootype(
-        &mut self,
-        _type_universe: &wootype::core::universe::TypeUniverse,
-    ) -> Result<Arc<SymbolUniverse>> {
-        let start = Instant::now();
-
-        tracing::info!("Starting import from wootype...");
-
-        // wootype 使用不同的内部结构，需要适配
-        // 这里简化处理
-        let universe = SymbolUniverse::new(1000);
-
-        tracing::info!("Import from wootype complete in {:?}", start.elapsed());
-
-        Ok(Arc::new(universe))
-    }
+    // Note: woofind and wootype integration disabled for standalone builds
+    //
+    // /// Import from woofind's InvertedIndex
+    // #[cfg(feature = "woofind")]
+    // pub fn import_from_woofind(
+    //     &mut self,
+    //     index: &woofind::index::InvertedIndex,
+    // ) -> Result<Arc<SymbolUniverse>> {
+    //     ...
+    // }
+    //
+    // /// Import from wootype's TypeUniverse
+    // #[cfg(feature = "wootype")]
+    // pub fn import_from_wootype(
+    //     &mut self,
+    //     _type_universe: &wootype::core::universe::TypeUniverse,
+    // ) -> Result<Arc<SymbolUniverse>> {
+    //     ...
+    // }
 
     /// Batch import with parallel processing
     pub fn batch_import<I>(&mut self, items: I) -> Result<Vec<Symbol>>
