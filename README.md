@@ -1,4 +1,4 @@
-# woolink 🔗
+# woolink 🐕
 
 **⚡ Blazing-fast Go Cross-package Symbol Resolver — 10-100x faster than Go type system**
 
@@ -91,7 +91,7 @@ Threads │ Total Time │ Per-thread │ Efficiency
 
 | Feature | Description |
 |---------|-------------|
-| 🔗 **Global Symbol Table** | Unified cross-package symbol management |
+| 🐕 **Global Symbol Table** | Unified cross-package symbol management |
 | ⚡ **O(1) Definition Jump** | Chained index, no re-parsing needed |
 | 📊 **SoA Layout** | CPU cache-friendly symbol storage |
 | 🔄 **Concurrent Safety** | RwLock supports 1000+ threads |
