@@ -4,7 +4,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/woolink)](https://crates.io/crates/woolink)
 [![Docs.rs](https://docs.rs/woolink/badge.svg)](https://docs.rs/woolink)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 woolink is a global symbol table and cross-package reference resolution engine written in Rust, featuring SoA layout and chained indexing for O(1) symbol jumps and 1000+ concurrent thread reads.
 
@@ -316,7 +316,7 @@ cargo bench
 
 ## 📄 License
 
-MIT License © [Your Name]
+Apache License 2.0 © [Your Name]
 
 ---
 
